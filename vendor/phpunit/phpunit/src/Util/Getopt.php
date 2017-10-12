@@ -34,8 +34,7 @@ class Getopt
         }
 
         \reset($args);
-
-        $args = \array_map('trim', $args);
+        \array_map('trim', $args);
 
         while (false !== $arg = \current($args)) {
             $i = \key($args);

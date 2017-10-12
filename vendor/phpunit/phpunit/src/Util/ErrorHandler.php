@@ -50,7 +50,7 @@ class ErrorHandler
 
         self::$errorStack[] = [$errno, $errstr, $errfile, $errline];
 
-        $trace = \debug_backtrace();
+        $trace = \debug_backtrace(false);
         \array_shift($trace);
 
         foreach ($trace as $frame) {

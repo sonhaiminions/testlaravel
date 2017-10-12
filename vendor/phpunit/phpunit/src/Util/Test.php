@@ -423,7 +423,10 @@ class Test
      */
     private static function parseAnnotationContent($message)
     {
-        if ((\strpos($message, '::') !== false && \count(\explode('::', $message)) == 2) && \defined($message)) {
+        if (
+            (\strpos($message, '::') !== false && \count(\explode('::', $message)) == 2)
+            && \defined($message)
+        ) {
             $message = \constant($message);
         }
 

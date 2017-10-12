@@ -513,7 +513,7 @@ class Configuration
             $value = $data['value'];
 
             if (\defined($value)) {
-                $value = (string) \constant($value);
+                $value = \constant($value);
             }
 
             \ini_set($name, $value);

@@ -31,10 +31,7 @@ use PHPUnit\Util\Getopt;
 use PHPUnit\Util\Log\TeamCity;
 use PHPUnit\Util\TestDox\TextResultPrinter;
 use PHPUnit\Util\Printer;
-use PHPUnit\Util\TextTestListRenderer;
-use PHPUnit\Util\XmlTestListRenderer;
 use ReflectionClass;
-use SebastianBergmann\CodeCoverage\Report\PHP;
 use Throwable;
 
 /**
@@ -49,8 +46,6 @@ class Command
     protected $arguments = [
         'listGroups'              => false,
         'listSuites'              => false,
-        'listTests'               => false,
-        'listTestsXml'            => false,
         'loader'                  => null,
         'useDefaultConfiguration' => true,
         'loadedExtensions'        => [],
@@ -92,8 +87,6 @@ class Command
         'include-path='             => null,
         'list-groups'               => null,
         'list-suites'               => null,
-        'list-tests'                => null,
-        'list-tests-xml='           => null,
         'loader='                   => null,
         'log-junit='                => null,
         'log-teamcity='             => null,
@@ -171,19 +164,43 @@ class Command
         }
 
         if ($this->arguments['listGroups']) {
-            return $this->handleListGroups($suite, $exit);
+            $this->printVersionString();
+
+            print "Available test group(s):\n";
+
+            $groups = $suite->getGroups();
+            \sort($groups);
+
+            foreach ($groups as $group) {
+                print " - $group\n";
+            }
+
+            if ($exit) {
+                exit(TestRunner::SUCCESS_EXIT);
+            }
+
+            return TestRunner::SUCCESS_EXIT;
         }
 
         if ($this->arguments['listSuites']) {
-            return $this->handleListSuites($exit);
-        }
+            $this->printVersionString();
 
-        if ($this->arguments['listTests']) {
-            return $this->handleListTests($suite, $exit);
-        }
+            print "Available test suite(s):\n";
 
-        if ($this->arguments['listTestsXml']) {
-            return $this->handleListTestsXml($suite, $this->arguments['listTestsXml'], $exit);
+            $configuration = Configuration::getInstance(
+                $this->arguments['configuration']
+            );
+
+            $suiteNames = $configuration->getTestSuiteNames();
+            foreach ($suiteNames as $suiteName) {
+                print " - $suiteName\n";
+            }
+
+            if ($exit) {
+                exit(TestRunner::SUCCESS_EXIT);
+            }
+
+            return TestRunner::SUCCESS_EXIT;
         }
 
         unset(
@@ -194,7 +211,7 @@ class Command
         try {
             $result = $runner->doRun($suite, $this->arguments, $exit);
         } catch (Exception $e) {
-            print $e->getMessage() . PHP_EOL;
+            print $e->getMessage() . "\n";
         }
 
         $return = TestRunner::FAILURE_EXIT;
@@ -276,7 +293,7 @@ class Command
                 \array_keys($this->longOptions)
             );
         } catch (Exception $t) {
-            $this->exitWithErrorMessage($t->getMessage());
+            $this->showError($t->getMessage());
         }
 
         foreach ($this->options[0] as $option) {
@@ -292,7 +309,7 @@ class Command
                 case '--columns':
                     if (\is_numeric($option[1])) {
                         $this->arguments['columns'] = (int) $option[1];
-                    } elseif ($option[1] === 'max') {
+                    } elseif ($option[1] == 'max') {
                         $this->arguments['columns'] = 'max';
                     }
                     break;
@@ -365,7 +382,10 @@ class Command
                 case '--generate-configuration':
                     $this->printVersionString();
 
-                    print 'Generating phpunit.xml in ' . \getcwd() . PHP_EOL . PHP_EOL;
+                    \printf(
+                        "Generating phpunit.xml in %s\n\n",
+                        \getcwd()
+                    );
 
                     print 'Bootstrap script (relative to path shown above; default: vendor/autoload.php): ';
                     $bootstrapScript = \trim(\fgets(STDIN));
@@ -376,15 +396,15 @@ class Command
                     print 'Source directory (relative to path shown above; default: src): ';
                     $src = \trim(\fgets(STDIN));
 
-                    if ($bootstrapScript === '') {
+                    if ($bootstrapScript == '') {
                         $bootstrapScript = 'vendor/autoload.php';
                     }
 
-                    if ($testsDirectory === '') {
+                    if ($testsDirectory == '') {
                         $testsDirectory = 'tests';
                     }
 
-                    if ($src === '') {
+                    if ($src == '') {
                         $src = 'src';
                     }
 
@@ -400,7 +420,10 @@ class Command
                         )
                     );
 
-                    print PHP_EOL . 'Generated phpunit.xml in ' . \getcwd() . PHP_EOL;
+                    \printf(
+                        "\nGenerated phpunit.xml in %s\n",
+                        \getcwd()
+                    );
 
                     exit(TestRunner::SUCCESS_EXIT);
                     break;
@@ -433,14 +456,6 @@ class Command
 
                 case '--list-suites':
                     $this->arguments['listSuites'] = true;
-                    break;
-
-                case '--list-tests':
-                    $this->arguments['listTests'] = true;
-                    break;
-
-                case '--list-tests-xml':
-                    $this->arguments['listTestsXml'] = $option[1];
                     break;
 
                 case '--printer':
@@ -705,7 +720,7 @@ class Command
                     $this->arguments['configuration']
                 );
             } catch (Throwable $t) {
-                print $t->getMessage() . PHP_EOL;
+                print $t->getMessage() . "\n";
                 exit(TestRunner::FAILURE_EXIT);
             }
 
@@ -833,7 +848,7 @@ class Command
             return;
         }
 
-        $this->exitWithErrorMessage(
+        $this->showError(
             \sprintf(
                 'Could not use "%s" as loader.',
                 $loaderClass
@@ -865,53 +880,28 @@ class Command
             }
         }
 
-        if (!\class_exists($printerClass)) {
-            $this->exitWithErrorMessage(
-                \sprintf(
-                    'Could not use "%s" as printer: class does not exist',
-                    $printerClass
-                )
-            );
+        if (\class_exists($printerClass)) {
+            $class = new ReflectionClass($printerClass);
+
+            if ($class->implementsInterface(TestListener::class) &&
+                $class->isSubclassOf(Printer::class) &&
+                $class->isInstantiable()) {
+                if ($class->isSubclassOf(ResultPrinter::class)) {
+                    return $printerClass;
+                }
+
+                $outputStream = isset($this->arguments['stderr']) ? 'php://stderr' : null;
+
+                return $class->newInstance($outputStream);
+            }
         }
 
-        $class = new ReflectionClass($printerClass);
-
-        if (!$class->implementsInterface(TestListener::class)) {
-            $this->exitWithErrorMessage(
-                \sprintf(
-                    'Could not use "%s" as printer: class does not implement %s',
-                    $printerClass,
-                    TestListener::class
-                )
-            );
-        }
-
-        if (!$class->isSubclassOf(Printer::class)) {
-            $this->exitWithErrorMessage(
-                \sprintf(
-                    'Could not use "%s" as printer: class does not extend %s',
-                    $printerClass,
-                    Printer::class
-                )
-            );
-        }
-
-        if (!$class->isInstantiable()) {
-            $this->exitWithErrorMessage(
-                \sprintf(
-                    'Could not use "%s" as printer: class cannot be instantiated',
-                    $printerClass
-                )
-            );
-        }
-
-        if ($class->isSubclassOf(ResultPrinter::class)) {
-            return $printerClass;
-        }
-
-        $outputStream = isset($this->arguments['stderr']) ? 'php://stderr' : null;
-
-        return $class->newInstance($outputStream);
+        $this->showError(
+            \sprintf(
+                'Could not use "%s" as printer.',
+                $printerClass
+            )
+        );
     }
 
     /**
@@ -924,7 +914,7 @@ class Command
         try {
             Fileloader::checkAndLoad($filename);
         } catch (Exception $e) {
-            $this->exitWithErrorMessage($e->getMessage());
+            $this->showError($e->getMessage());
         }
     }
 
@@ -937,12 +927,12 @@ class Command
 
         if ($isOutdated) {
             \printf(
-                'You are not using the latest version of PHPUnit.' . PHP_EOL .
-                'The latest version is PHPUnit %s.' . PHP_EOL,
+                "You are not using the latest version of PHPUnit.\n" .
+                "The latest version is PHPUnit %s.\n",
                 $latestVersion
             );
         } else {
-            print 'You are using the latest version of PHPUnit.' . PHP_EOL;
+            print "You are using the latest version of PHPUnit.\n";
         }
 
         exit(TestRunner::SUCCESS_EXIT);
@@ -988,8 +978,6 @@ Test Selection Options:
   --exclude-group ...         Exclude tests from the specified group(s).
   --list-groups               List available test groups.
   --list-suites               List available test suites.
-  --list-tests                List available tests.
-  --list-tests-xml <file>     List available tests in XML format.
   --test-suffix ...           Only search for test in files with specified
                               suffix(es). Default: Test.php,.phpt
 
@@ -1065,7 +1053,7 @@ EOT;
             return;
         }
 
-        print Version::getVersionString() . PHP_EOL . PHP_EOL;
+        print Version::getVersionString() . "\n\n";
 
         $this->versionStringPrinted = true;
     }
@@ -1073,11 +1061,11 @@ EOT;
     /**
      * @param string $message
      */
-    private function exitWithErrorMessage($message)
+    private function showError($message)
     {
         $this->printVersionString();
 
-        print $message . PHP_EOL;
+        print $message . "\n";
 
         exit(TestRunner::FAILURE_EXIT);
     }
@@ -1122,89 +1110,5 @@ EOT;
 
             $this->arguments['loadedExtensions'][] = $manifest->getName() . ' ' . $manifest->getVersion()->getVersionString();
         }
-    }
-
-    private function handleListGroups(TestSuite $suite, bool $exit): int
-    {
-        $this->printVersionString();
-
-        print 'Available test group(s):' . PHP_EOL;
-
-        $groups = $suite->getGroups();
-        \sort($groups);
-
-        foreach ($groups as $group) {
-            \printf(
-                ' - %s' . PHP_EOL,
-                $group
-            );
-        }
-
-        if ($exit) {
-            exit(TestRunner::SUCCESS_EXIT);
-        }
-
-        return TestRunner::SUCCESS_EXIT;
-    }
-
-    private function handleListSuites(bool $exit): int
-    {
-        $this->printVersionString();
-
-        print 'Available test suite(s):' . PHP_EOL;
-
-        $configuration = Configuration::getInstance(
-            $this->arguments['configuration']
-        );
-
-        $suiteNames = $configuration->getTestSuiteNames();
-
-        foreach ($suiteNames as $suiteName) {
-            \printf(
-                ' - %s' . PHP_EOL,
-                $suiteName
-            );
-        }
-
-        if ($exit) {
-            exit(TestRunner::SUCCESS_EXIT);
-        }
-
-        return TestRunner::SUCCESS_EXIT;
-    }
-
-    private function handleListTests(TestSuite $suite, bool $exit): int
-    {
-        $this->printVersionString();
-
-        $renderer = new TextTestListRenderer;
-
-        print $renderer->render($suite);
-
-        if ($exit) {
-            exit(TestRunner::SUCCESS_EXIT);
-        }
-
-        return TestRunner::SUCCESS_EXIT;
-    }
-
-    private function handleListTestsXml(TestSuite $suite, string $target, bool $exit): int
-    {
-        $this->printVersionString();
-
-        $renderer = new XmlTestListRenderer;
-
-        \file_put_contents($target, $renderer->render($suite));
-
-        \printf(
-            'Wrote list of tests that would have been run to %s' . \PHP_EOL,
-            $target
-        );
-
-        if ($exit) {
-            exit(TestRunner::SUCCESS_EXIT);
-        }
-
-        return TestRunner::SUCCESS_EXIT;
     }
 }

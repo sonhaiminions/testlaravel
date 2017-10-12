@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitac407aa9d28fd07d67f850b620996d30
+class ComposerStaticInit5d79050d169f6aad9e2c265076236e88
 {
     public static $files = array (
         '1d1b89d124cc9cb8219922c9d5569199' => __DIR__ . '/..' . '/hamcrest/hamcrest-php/hamcrest/Hamcrest.php',
@@ -451,7 +451,6 @@ class ComposerStaticInitac407aa9d28fd07d67f850b620996d30
         'PHPUnit\\Framework\\TestCase' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/TestCase.php',
         'PHPUnit\\Framework\\TestFailure' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/TestFailure.php',
         'PHPUnit\\Framework\\TestListener' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/TestListener.php',
-        'PHPUnit\\Framework\\TestListenerDefaultImplementation' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/TestListenerDefaultImplementation.php',
         'PHPUnit\\Framework\\TestResult' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/TestResult.php',
         'PHPUnit\\Framework\\TestSuite' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/TestSuite.php',
         'PHPUnit\\Framework\\TestSuiteIterator' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/TestSuiteIterator.php',
@@ -495,10 +494,8 @@ class ComposerStaticInitac407aa9d28fd07d67f850b620996d30
         'PHPUnit\\Util\\TestDox\\ResultPrinter' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/TestDox/ResultPrinter.php',
         'PHPUnit\\Util\\TestDox\\TextResultPrinter' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/TestDox/TextResultPrinter.php',
         'PHPUnit\\Util\\TestDox\\XmlResultPrinter' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/TestDox/XmlResultPrinter.php',
-        'PHPUnit\\Util\\TextTestListRenderer' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/TextTestListRenderer.php',
         'PHPUnit\\Util\\Type' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/Type.php',
         'PHPUnit\\Util\\Xml' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/Xml.php',
-        'PHPUnit\\Util\\XmlTestListRenderer' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/XmlTestListRenderer.php',
         'PHPUnit_Framework_MockObject_BadMethodCallException' => __DIR__ . '/..' . '/phpunit/phpunit-mock-objects/src/Exception/BadMethodCallException.php',
         'PHPUnit_Framework_MockObject_Builder_Identity' => __DIR__ . '/..' . '/phpunit/phpunit-mock-objects/src/Builder/Identity.php',
         'PHPUnit_Framework_MockObject_Builder_InvocationMocker' => __DIR__ . '/..' . '/phpunit/phpunit-mock-objects/src/Builder/InvocationMocker.php',
@@ -914,10 +911,10 @@ class ComposerStaticInitac407aa9d28fd07d67f850b620996d30
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitac407aa9d28fd07d67f850b620996d30::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitac407aa9d28fd07d67f850b620996d30::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInitac407aa9d28fd07d67f850b620996d30::$prefixesPsr0;
-            $loader->classMap = ComposerStaticInitac407aa9d28fd07d67f850b620996d30::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit5d79050d169f6aad9e2c265076236e88::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit5d79050d169f6aad9e2c265076236e88::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit5d79050d169f6aad9e2c265076236e88::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInit5d79050d169f6aad9e2c265076236e88::$classMap;
 
         }, null, ClassLoader::class);
     }

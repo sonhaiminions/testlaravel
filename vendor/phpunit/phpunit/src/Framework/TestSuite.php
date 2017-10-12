@@ -16,6 +16,7 @@ use PHPUnit\Runner\Filter\Factory;
 use PHPUnit\Runner\PhptTestCase;
 use PHPUnit\Util\Fileloader;
 use PHPUnit\Util\InvalidArgumentHelper;
+use RecursiveIteratorIterator;
 use ReflectionClass;
 use ReflectionMethod;
 use Throwable;
@@ -967,7 +968,7 @@ class TestSuite implements Test, SelfDescribing, IteratorAggregate
     /**
      * Returns an iterator for this test suite.
      *
-     * @return TestSuiteIterator
+     * @return RecursiveIteratorIterator
      */
     public function getIterator()
     {
